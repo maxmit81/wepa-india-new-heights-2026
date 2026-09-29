@@ -1,18 +1,9 @@
 # WEPA India · New Heights · DEC Off-site 2026
 
-The public site is in `docs/` and publishes on GitHub Pages. It uses one-screen sections with direct navigation and no page scrolling. The public feedback form is hidden until the organiser chooses to open it. The submission API is in `backend/` and uses a Cloudflare Worker with a D1 database for photos and feedback. All photos start as `pending`; only approved photos appear in the public gallery. GitHub Pages alone cannot accept or store uploads. Until the backend is configured, the event page and QR codes work while the photo form is visibly disabled.
+The public site is a continuous, responsive page in `docs/`, published to [GitHub Pages](https://maxmit81.github.io/wepa-india-new-heights-2026/) by `.github/workflows/pages.yml`. Visitors can scroll naturally or use the sticky section menu and day links. All four complete agendas, all speaker cards, and all resort facilities are visible together. Feedback is hidden from the public page.
 
-## Publish the backend
+Photo uploads require the Cloudflare Worker and D1 database in `backend/`. GitHub Pages cannot store files. The upload form stays disabled with a clear status message until a deployed Worker answers `/api/health`. Once connected, attendees can use the photo QR code, compress and upload an image, see a receipt or error, and wait for organiser review. Approved images appear in the public gallery. The private review desk is at `docs/admin.html`.
 
-1. Use the **Workers Free** plan in a Cloudflare account. Create a D1 database named `wepa-new-heights-db`.
-2. Put the returned D1 database ID into `backend/wrangler.jsonc`. Set `ALLOWED_ORIGIN` to `https://YOUR_GITHUB_USERNAME.github.io` (the origin, without repository path).
-3. From `backend/`, install dependencies with `npm install`, authenticate with `npx wrangler login`, and run `npx wrangler d1 execute wepa-new-heights-db --remote --file migrations/0001_init.sql` once.
-4. Run `npx wrangler secret put ADMIN_TOKEN` and enter a long random review key. Never commit it to GitHub. Deploy with `npm run deploy`.
+See [PHOTO-SERVICE-SETUP.md](PHOTO-SERVICE-SETUP.md) for the exact Cloudflare and GitHub configuration, deployment workflow, and end-to-end sample upload check. Never commit or send credentials in a message.
 
-## Publish the site
-
-Push this source to `main`. In **Settings → Pages**, select **GitHub Actions** as the publishing source. Run **Publish off-site website**. The workflow generates both QR codes for the actual GitHub Pages URL and publishes `docs/`. A subsequent push to `main` republishes the site automatically. Once the backend is deployed, set the repository Actions variable `WEPA_API_URL` to its HTTPS Worker URL and rerun the workflow to enable the forms.
-
-The footer's **Review submissions** link opens `admin.html`. Enter the review key there to approve or reject photos and read private feedback. The key stays in memory until the tab is closed.
-
-Keep the Cloudflare account on the **Workers Free** plan if you want a strict no-charge setup. D1 free accounts currently have a 500 MB limit per database; the API stops taking photos at 500 photos or 250 MB, whichever comes first. It compresses large source images in visitors' browsers, storing each at up to 1.5 MB. Rejected photos are erased from storage. If free daily request or database limits are reached, the submission service stops until the limits reset; do not upgrade to a paid plan unless you choose to accept charges. Keep an eye on usage in Cloudflare's dashboard. Photos uploaded before publishing are not possible; the GitHub Pages workflow waits for a working API URL.
+The Pages workflow regenerates the event and photo QR codes for the repository's actual URL, and inserts `WEPA_API_URL` from the repository Actions variable when configured. The Worker allows requests from `https://maxmit81.github.io`.

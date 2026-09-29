@@ -110,6 +110,7 @@ function go(id){if(id==='menu'){openMenu();return}const i=slides.findIndex(s=>s.
 function openMenu(){menuOpen=true;document.getElementById('categoryMenu').hidden=false;document.getElementById('menuButton').setAttribute('aria-expanded','true')}
 function closeMenu(){menuOpen=false;document.getElementById('categoryMenu').hidden=true;document.getElementById('menuButton').setAttribute('aria-expanded','false')}
 render();
+document.getElementById('topButton').addEventListener('click',()=>show(0));
 document.getElementById('menuButton').addEventListener('click',()=>menuOpen?closeMenu():openMenu());
 document.getElementById('previousButton').addEventListener('click',()=>show(current-1));document.getElementById('nextButton').addEventListener('click',()=>show(current+1));
 document.addEventListener('click',e=>{const jump=e.target.closest('[data-go]');if(jump){e.preventDefault();go(jump.dataset.go)}const anchor=e.target.closest('a[href^="#"]');if(anchor){e.preventDefault();go(anchor.getAttribute('href').slice(1))}});

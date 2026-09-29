@@ -49,3 +49,15 @@ html[data-theme=dark] .official-logo-white{display:block}
 .site-header .official-logo-blue{position:absolute;left:0;top:50%;transform:translateY(-50%);width:201.1%;max-width:none;height:auto}
 @media(max-width:700px){.site-header .brand-logo-shell{width:96px;min-width:96px;height:38px;padding:0}}
 
+
+/* Approved subtle Indian tricolour accents, shared by both themes. */
+html[data-theme=light] .hero-sky{background:radial-gradient(ellipse at 0% 0%,#ff99331c,transparent 42%),radial-gradient(ellipse at 100% 100%,#13880818,transparent 48%)}
+html[data-theme=dark] .hero-sky{background:radial-gradient(ellipse at 0% 0%,#ff993321,transparent 42%),radial-gradient(ellipse at 100% 100%,#13880824,transparent 48%)}
+.hero .hero-sky:after{opacity:.25}
+.hero .hero-card:after{content:"";position:absolute;left:0;right:0;top:0;width:100%;height:6px;border:0;border-radius:0;box-shadow:none;background:linear-gradient(90deg,#ff9933 0 33.333%,#fff 33.333% 66.666%,#138808 66.666% 100%);pointer-events:none}
+.hero .countdown div:nth-child(1){background:linear-gradient(135deg,#ffe29a,#ffad36);border-color:#ffd37c}
+.hero .countdown div:nth-child(2){background:linear-gradient(135deg,#fff,#e9f0f6);border-color:#fff}
+.hero .countdown div:nth-child(3){background:linear-gradient(135deg,#d5f6a0,#91d653);border-color:#bae780}
+.hero .countdown strong{color:#102d35}.hero .countdown span{color:#284437}
+.hero .date-chip>span:first-child{color:#ffd477}.hero .date-chip>span:nth-of-type(2){color:#d4ef9e}
+

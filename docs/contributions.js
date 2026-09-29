@@ -1,19 +1,33 @@
 const photoForm = document.getElementById('photoUploadForm');
 const photoStatus = document.getElementById('photoStatus');
-const feedbackForm = document.getElementById('feedbackForm');
-const feedbackStatus = document.getElementById('feedbackStatus');
 const gallery = document.getElementById('photoGallery');
 const apiBase = (window.WEPA_API_BASE || '').replace(/\/$/, '');
 const apiUrl = (path) => `${apiBase}${path}`;
 const MAX_UPLOAD_BYTES = 1_500_000;
 
-if (!apiBase) {
-  for (const form of [photoForm, feedbackForm]) {
-    if (!form) continue;
-    for (const input of form.querySelectorAll('input, select, textarea, button')) input.disabled = true;
+// An upload button is enabled only after the deployed storage service responds.
+function setPhotoEnabled(enabled) {
+  if (!photoForm) return;
+  for (const input of photoForm.querySelectorAll('input, button')) input.disabled = !enabled;
+}
+setPhotoEnabled(false);
+async function checkPhotoService() {
+  if (!apiBase) {
+    showStatus(photoStatus, 'Photo sharing is not open yet. Please check back before the off-site.');
+    return false;
   }
-  showStatus(photoStatus, 'Photo sharing will open before the off-site. The event information and QR code are ready to use.');
-  showStatus(feedbackStatus, 'Feedback will open during the off-site.');
+  try {
+    const response = await fetch(apiUrl('/api/health'), { cache: 'no-store' });
+    const result = await response.json();
+    if (!response.ok || !result.ready) throw new Error('Unavailable');
+    setPhotoEnabled(true);
+    showStatus(photoStatus, 'Ready to upload. Photos are reviewed before appearing below.');
+    return true;
+  } catch {
+    setPhotoEnabled(false);
+    showStatus(photoStatus, 'Photo sharing is temporarily unavailable. Please try again later.', 'error');
+    return false;
+  }
 }
 
 async function preparePhoto(file) {
@@ -102,8 +116,8 @@ photoForm?.addEventListener('submit', async (event) => {
     payload.set('photo', upload);
     showStatus(photoStatus, 'Uploading your photo…');
     const response = await fetch(apiUrl('/api/photos'), { method: 'POST', body: payload });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Upload failed.');
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Upload failed. Please try again.');
     photoForm.reset();
     showStatus(photoStatus, 'Thank you! Your photo has been received and will appear after review.', 'success');
   } catch (error) {
@@ -113,27 +127,4 @@ photoForm?.addEventListener('submit', async (event) => {
   }
 });
 
-feedbackForm?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const button = feedbackForm.querySelector('button[type=submit]');
-  button.disabled = true;
-  showStatus(feedbackStatus, 'Sending your feedback…');
-  const form = new FormData(feedbackForm);
-  const payload = Object.fromEntries(form.entries());
-  try {
-    if (!apiBase) throw new Error('Feedback is not ready yet.');
-    const response = await fetch(apiUrl('/api/feedback'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Could not save feedback.');
-    feedbackForm.reset();
-    showStatus(feedbackStatus, 'Thank you—your feedback was saved.', 'success');
-  } catch (error) {
-    showStatus(feedbackStatus, error.message || 'Could not save feedback. Please try again.', 'error');
-  } finally {
-    button.disabled = false;
-  }
-});
-
-loadGallery();
+checkPhotoService().then(ready => { if (ready) loadGallery(); });

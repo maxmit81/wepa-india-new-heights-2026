@@ -54,6 +54,10 @@ export default {
       return json({ error: 'Open this form from the event website.' }, 403, headers);
     }
     try {
+      if (path === '/api/health' && request.method === 'GET') {
+        await env.DB.prepare('SELECT 1 AS ok').first();
+        return json({ ready: true }, 200, headers);
+      }
       if (path === '/api/photos' && request.method === 'GET') {
         const result = await env.DB.prepare("SELECT id, caption, uploader_name AS name FROM photos WHERE status = 'approved' ORDER BY created_at DESC LIMIT 60").all();
         return json({ photos: result.results }, 200, headers);

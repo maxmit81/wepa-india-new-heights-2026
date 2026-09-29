@@ -34,3 +34,12 @@ html[data-theme=dark]{--card-hover-border:#b2d978;--card-hover-shadow:0 20px 45p
 .hero .event-mark h1{line-height:1.08;overflow:visible}
 .hero .event-mark h1 span{line-height:1.18;padding:0 .06em .12em .02em;margin-left:-.02em;margin-bottom:-.12em;max-width:100%;overflow:visible}
 .hero-copy{min-width:0}
+
+/* Original company artwork; no font recreation or colour filtering. */
+.site-header .brand-logo-shell{width:94px;min-width:94px;height:40px;padding:5px;background:transparent!important;border-radius:0;overflow:hidden;position:relative}
+.site-header .official-logo-blue{width:100%;height:auto;object-fit:contain;display:block}
+.site-header .official-logo-white{display:none;position:absolute;width:225%;max-width:none;height:auto;left:50%;top:50%;transform:translate(-50%,-50%)}
+html[data-theme=dark] .official-logo-blue{display:none}
+html[data-theme=dark] .official-logo-white{display:block}
+@media(max-width:700px){.site-header .brand-logo-shell{width:76px;min-width:76px;height:34px;padding:3px}}
+

@@ -6,7 +6,7 @@ import qrcode
 
 root = Path(__file__).resolve().parents[1]
 owner, repo = os.environ["GITHUB_REPOSITORY"].split("/", 1)
-api_url = os.environ.get("WEPA_API_URL", "").rstrip("/")
+api_url = (os.environ.get("WEPA_API_URL") or "https://wepa-new-heights-api.maxmit81.workers.dev").rstrip("/")
 if api_url and not api_url.startswith("https://"):
     raise SystemExit("WEPA_API_URL must be the deployed HTTPS Worker URL.")
 pages_url = f"https://{owner.lower()}.github.io/"

@@ -103,19 +103,25 @@ export default {
         if (!photo.image_data) return new Response('Not found', { status: 404, headers });
         return new Response(new Uint8Array(photo.image_data), { headers: {
           ...headers, 'Content-Type': photo.mime_type, 'Content-Disposition': 'inline',
-          'X-Content-Type-Options': 'nosniff', 'Cache-Control': pendingMatch ? 'private, no-store' : 'public, max-age=300'
+          'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store'
         } });
       }
       if (path === '/api/admin/submissions' && request.method === 'GET') {
-        const [photos, feedback] = await Promise.all([
-          env.DB.prepare("SELECT id, caption, uploader_name AS name, created_at AS createdAt FROM photos WHERE status='pending' ORDER BY created_at DESC LIMIT 100").all(),
+        const [photos, approved, feedback] = await Promise.all([
+          env.DB.prepare("SELECT id, caption, uploader_name AS name, created_at AS createdAt FROM photos WHERE status='pending' ORDER BY created_at DESC LIMIT 500").all(),
+          env.DB.prepare("SELECT id, caption, uploader_name AS name, created_at AS createdAt FROM photos WHERE status='approved' ORDER BY created_at DESC LIMIT 500").all(),
           env.DB.prepare('SELECT * FROM feedback ORDER BY created_at DESC LIMIT 100').all()
         ]);
-        return json({ pending: photos.results, feedback: feedback.results.map(row=>({ ...row, createdAt: row.created_at })) }, 200, headers);
+        return json({ pending: photos.results, approved: approved.results, feedback: feedback.results.map(row=>({ ...row, createdAt: row.created_at })) }, 200, headers);
       }
       const reviewMatch = path.match(/^\/api\/admin\/photos\/([a-f0-9-]{36})$/);
       if (reviewMatch && request.method === 'POST') {
         const input = await request.json();
+        if (input.action === 'delete') {
+          const result = await env.DB.prepare('DELETE FROM photos WHERE id = ?').bind(reviewMatch[1]).run();
+          if (!result.meta.changes) return json({ error: 'Photo not found or already deleted.' }, 404, headers);
+          return json({ deleted: true }, 200, headers);
+        }
         if (!['approve','reject'].includes(input.action)) return json({ error:'Invalid action' }, 400, headers);
         const status = input.action === 'approve' ? 'approved' : 'rejected';
         const photo = await env.DB.prepare("SELECT id FROM photos WHERE id=? AND status='pending'").bind(reviewMatch[1]).first();

@@ -1,6 +1,6 @@
 # WEPA India · New Heights · DEC Off-site 2026
 
-The public site is in `docs/` and publishes on GitHub Pages. The submission API is in `backend/` and uses a Cloudflare Worker with a D1 database for photos and feedback. All photos start as `pending`; only approved photos appear in the public gallery. Feedback is visible only in the protected review desk. GitHub Pages alone cannot accept or store uploads. Until the backend is configured, the event page and QR codes work while the submission forms are visibly disabled.
+The public site is in `docs/` and publishes on GitHub Pages. It uses one-screen sections with direct navigation and no page scrolling. The public feedback form is hidden until the organiser chooses to open it. The submission API is in `backend/` and uses a Cloudflare Worker with a D1 database for photos and feedback. All photos start as `pending`; only approved photos appear in the public gallery. GitHub Pages alone cannot accept or store uploads. Until the backend is configured, the event page and QR codes work while the photo form is visibly disabled.
 
 ## Publish the backend
 

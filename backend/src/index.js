@@ -114,6 +114,25 @@ export default {
         ]);
         return json({ pending: photos.results, approved: approved.results, feedback: feedback.results.map(row=>({ ...row, createdAt: row.created_at })) }, 200, headers);
       }
+      if (path === '/api/admin/photos/bulk' && request.method === 'POST') {
+        const input = await request.json();
+        if (!['approve', 'delete'].includes(input.action) || !Array.isArray(input.ids) ||
+            input.ids.length < 1 || input.ids.length > MAX_PHOTOS ||
+            input.ids.some(id => typeof id !== 'string' || !/^[a-f0-9-]{36}$/.test(id))) {
+          return json({ error: 'Choose between 1 and 500 photos and a valid action.' }, 400, headers);
+        }
+        const ids = [...new Set(input.ids)];
+        const statements = [];
+        for (let i = 0; i < ids.length; i += 80) {
+          const chunk = ids.slice(i, i + 80);
+          const placeholders = chunk.map(() => '?').join(',');
+          statements.push(input.action === 'delete'
+            ? env.DB.prepare('DELETE FROM photos WHERE id IN (' + placeholders + ')').bind(...chunk)
+            : env.DB.prepare("UPDATE photos SET status='approved', reviewed_at=? WHERE status='pending' AND id IN (" + placeholders + ')').bind(new Date().toISOString(), ...chunk));
+        }
+        const results = await env.DB.batch(statements);
+        return json({ action: input.action, changed: results.reduce((sum, result) => sum + result.meta.changes, 0) }, 200, headers);
+      }
       const reviewMatch = path.match(/^\/api\/admin\/photos\/([a-f0-9-]{36})$/);
       if (reviewMatch && request.method === 'POST') {
         const input = await request.json();

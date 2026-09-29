@@ -2,8 +2,28 @@
   "name": "wepa-new-heights-api",
   "main": "src/index.js",
   "compatibility_date": "2026-09-28",
-  "vars": { "ALLOWED_ORIGIN": "https://maxmit81.github.io" },
+  "vars": {
+    "ALLOWED_ORIGIN": "https://maxmit81.github.io"
+  },
   "d1_databases": [
-    { "binding": "DB", "database_name": "wepa-new-heights-db", "database_id": "REPLACE_WITH_D1_DATABASE_ID" }
-  ]
+    {
+      "binding": "DB",
+      "database_name": "wepa-new-heights-db",
+      "database_id": "21dc6d1b-93c9-402c-bda9-2b47f8281a13"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PHOTOS",
+      "bucket_name": "wepa-new-heights-photos"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  }
 }

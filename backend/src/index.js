@@ -1,6 +1,6 @@
 const MAX_BYTES = 1_500_000;
-const MAX_PHOTOS = 500;
-const MAX_TOTAL_BYTES = 250 * 1024 * 1024;
+const MAX_BULK = 500;
+const MAX_TOTAL_BYTES = 2_000_000_000;
 const PHOTO_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 
 function cors(request, env) {
@@ -38,7 +38,40 @@ async function adminAllowed(request, env) {
   return different === 0;
 }
 
+
+const objectKey = id => 'photos/' + id;
+function offsetFrom(url) {
+  const value = Number(url.searchParams.get('offset') || 0);
+  return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+async function removePhotos(env, ids, pendingOnly = false) {
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += 80) chunks.push(ids.slice(i, i + 80));
+  // Hide first; leave failed deletions reserved and retryable until storage is removed.
+  await env.DB.batch(chunks.map(chunk => env.DB.prepare(
+    "UPDATE photos SET status='deleting' WHERE id IN (" + chunk.map(() => '?').join(',') + ") AND " +
+    (pendingOnly ? "status='pending'" : "status IN ('pending','approved','rejected','deleting')")
+  ).bind(...chunk)));
+  const rows = await env.DB.batch(chunks.map(chunk => env.DB.prepare(
+    "SELECT id FROM photos WHERE status='deleting' AND id IN (" + chunk.map(() => '?').join(',') + ')'
+  ).bind(...chunk)));
+  const removing = rows.flatMap(result => result.results.map(row => row.id));
+  if (!removing.length) return 0;
+  await env.PHOTOS.delete(removing.map(objectKey));
+  const results = await env.DB.batch(chunks.map(chunk => env.DB.prepare(
+    "DELETE FROM photos WHERE status='deleting' AND id IN (" + chunk.map(() => '?').join(',') + ')'
+  ).bind(...chunk)));
+  return results.reduce((sum, result) => sum + result.meta.changes, 0);
+}
+async function cleanupIncomplete(env) {
+  // Upload handlers finish well before an hour; expired reservations are safe to reclaim.
+  await env.DB.prepare("UPDATE photos SET status='deleting' WHERE status='uploading' AND created_at < datetime('now','-1 hour')").run();
+  const rows = await env.DB.prepare("SELECT id FROM photos WHERE status='deleting' LIMIT 500").all();
+  if (rows.results.length) await removePhotos(env, rows.results.map(row => row.id));
+}
+
 export default {
+  async scheduled(event, env) { await cleanupIncomplete(env); },
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -55,12 +88,14 @@ export default {
     }
     try {
       if (path === '/api/health' && request.method === 'GET') {
-        await env.DB.prepare('SELECT 1 AS ok').first();
-        return json({ ready: true }, 200, headers);
+        await env.DB.prepare('SELECT storage_key FROM photos LIMIT 1').first();
+        await env.PHOTOS.head('health-check');
+        return json({ ready: true, capacityBytes: MAX_TOTAL_BYTES }, 200, headers);
       }
       if (path === '/api/photos' && request.method === 'GET') {
-        const result = await env.DB.prepare("SELECT id, caption, uploader_name AS name FROM photos WHERE status = 'approved' ORDER BY created_at DESC LIMIT 60").all();
-        return json({ photos: result.results }, 200, headers);
+        const offset = offsetFrom(url);
+        const result = await env.DB.prepare("SELECT id, caption, uploader_name AS name FROM photos WHERE status = 'approved' ORDER BY created_at DESC, id DESC LIMIT 61 OFFSET ?").bind(offset).all();
+        return json({photos:result.results.slice(0,60),nextOffset:result.results.length > 60 ? offset + 60 : null},200,headers);
       }
       if (path === '/api/photos' && request.method === 'POST') {
         const form = await request.formData();
@@ -70,16 +105,25 @@ export default {
         }
         const signature = new Uint8Array(await file.slice(0,16).arrayBuffer());
         if (!validImage(file.type, signature)) return json({ error: 'That file does not appear to be a valid photo.' }, 400, headers);
-        const usage = await env.DB.prepare("SELECT COUNT(*) AS count, COALESCE(SUM(bytes),0) AS bytes FROM photos WHERE status IN ('pending','approved')").first();
-        if (usage.count >= MAX_PHOTOS || usage.bytes + file.size > MAX_TOTAL_BYTES) {
-          return json({ error: 'The event photo space is full. Please contact the organiser.' }, 507, headers);
-        }
         const id = crypto.randomUUID();
         const name = String(form.get('name') || '').trim().slice(0,60);
         const caption = String(form.get('caption') || '').trim().slice(0,140);
-        const photoBytes = new Uint8Array(await file.arrayBuffer());
-        await env.DB.prepare('INSERT INTO photos (id, original_name, mime_type, bytes, caption, uploader_name, image_data) VALUES (?, ?, ?, ?, ?, ?, ?)')
-          .bind(id,file.name.slice(0,180),file.type,file.size,caption,name,photoBytes).run();
+        const key = objectKey(id);
+        // One SQL statement reserves space atomically, including concurrent uploads.
+        const reservation = await env.DB.prepare(
+          "INSERT INTO photos (id,original_name,mime_type,bytes,caption,uploader_name,storage_key,status) SELECT ?,?,?,?,?,?,?,'uploading' WHERE COALESCE((SELECT SUM(bytes) FROM photos WHERE status != 'rejected'),0) + ? <= ?"
+        ).bind(id,file.name.slice(0,180),file.type,file.size,caption,name,key,file.size,MAX_TOTAL_BYTES).run();
+        if (!reservation.meta.changes) return json({ error: 'The 2 GB photo space is full. Ask the organiser to delete unwanted photos.' }, 507, headers);
+        try {
+          await env.PHOTOS.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+          const saved = await env.DB.prepare("UPDATE photos SET status='pending' WHERE id=? AND status='uploading'").bind(id).run();
+          if (!saved.meta.changes) throw new Error('Upload reservation expired');
+        } catch (error) {
+          // Keep the reservation if cleanup fails; scheduled cleanup retries it.
+          await env.PHOTOS.delete(key);
+          await env.DB.prepare("DELETE FROM photos WHERE id=? AND status='uploading'").bind(id).run();
+          throw error;
+        }
         return json({ id, status: 'pending' }, 201, headers);
       }
       if (path === '/api/feedback' && request.method === 'POST') {
@@ -98,30 +142,52 @@ export default {
       const pendingMatch = path.match(/^\/api\/admin\/photos\/([a-f0-9-]{36})\/image$/);
       if (request.method === 'GET' && (photoMatch || pendingMatch)) {
         const id = (photoMatch || pendingMatch)[1];
-        const photo = await env.DB.prepare('SELECT image_data, mime_type, status FROM photos WHERE id = ?').bind(id).first();
-        if (!photo || (!pendingMatch && photo.status !== 'approved')) return new Response('Not found', { status: 404, headers });
-        if (!photo.image_data) return new Response('Not found', { status: 404, headers });
-        return new Response(new Uint8Array(photo.image_data), { headers: {
+        const photo = await env.DB.prepare('SELECT image_data, storage_key, mime_type, status FROM photos WHERE id = ?').bind(id).first();
+        if (!photo || !['pending','approved'].includes(photo.status) || (!pendingMatch && photo.status !== 'approved')) return new Response('Not found', { status: 404, headers });
+        const stored = photo.storage_key ? await env.PHOTOS.get(photo.storage_key) : null;
+        const body = stored?.body || (photo.image_data ? new Uint8Array(photo.image_data) : null);
+        if (!body) return new Response('Not found', { status: 404, headers });
+        return new Response(body, { headers: {
           ...headers, 'Content-Type': photo.mime_type, 'Content-Disposition': 'inline',
           'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store'
         } });
       }
       if (path === '/api/admin/submissions' && request.method === 'GET') {
-        const [photos, approved, feedback] = await Promise.all([
-          env.DB.prepare("SELECT id, caption, uploader_name AS name, created_at AS createdAt FROM photos WHERE status='pending' ORDER BY created_at DESC LIMIT 500").all(),
-          env.DB.prepare("SELECT id, caption, uploader_name AS name, created_at AS createdAt FROM photos WHERE status='approved' ORDER BY created_at DESC LIMIT 500").all(),
-          env.DB.prepare('SELECT * FROM feedback ORDER BY created_at DESC LIMIT 100').all()
+        const offset = offsetFrom(url);
+        const [photos, approved, feedback, usage] = await Promise.all([
+          env.DB.prepare("SELECT id, caption, uploader_name AS name, created_at AS createdAt FROM photos WHERE status IN ('pending','deleting') ORDER BY created_at DESC, id DESC LIMIT 501 OFFSET ?").bind(offset).all(),
+          env.DB.prepare("SELECT id, caption, uploader_name AS name, created_at AS createdAt FROM photos WHERE status='approved' ORDER BY created_at DESC, id DESC LIMIT 501 OFFSET ?").bind(offset).all(),
+          env.DB.prepare('SELECT * FROM feedback ORDER BY created_at DESC LIMIT 100').all(),
+          env.DB.prepare("SELECT COALESCE(SUM(bytes),0) AS usedBytes FROM photos WHERE status != 'rejected'").first()
         ]);
-        return json({ pending: photos.results, approved: approved.results, feedback: feedback.results.map(row=>({ ...row, createdAt: row.created_at })) }, 200, headers);
+        return json({ pending: photos.results.slice(0,500), approved: approved.results.slice(0,500), nextOffset: photos.results.length > 500 || approved.results.length > 500 ? offset + 500 : null, storage: {usedBytes:usage.usedBytes, capacityBytes:MAX_TOTAL_BYTES}, feedback: feedback.results.map(row=>({ ...row, createdAt: row.created_at })) }, 200, headers);
+      }
+      if (path === '/api/admin/storage/migrate' && request.method === 'POST' && env.MIGRATION_ENABLED === 'true') {
+        const rows = await env.DB.prepare("SELECT id,image_data,mime_type FROM photos WHERE storage_key IS NULL AND image_data IS NOT NULL AND status IN ('pending','approved') LIMIT 5").all();
+        let migrated = 0;
+        for (const photo of rows.results) {
+          const key = objectKey(photo.id);
+          const original = new Uint8Array(photo.image_data);
+          await env.PHOTOS.put(key, original, {httpMetadata:{contentType:photo.mime_type}});
+          const copy = await env.PHOTOS.get(key);
+          if (!copy) throw new Error('Migration verification failed');
+          const hashes = await Promise.all([crypto.subtle.digest('SHA-256', original), crypto.subtle.digest('SHA-256', await copy.arrayBuffer())]);
+          if (!new Uint8Array(hashes[0]).every((value, i) => value === new Uint8Array(hashes[1])[i])) throw new Error('Migration checksum mismatch');
+          const result = await env.DB.prepare("UPDATE photos SET storage_key=?,image_data=NULL WHERE id=? AND storage_key IS NULL AND status IN ('pending','approved')").bind(key,photo.id).run();
+          if (result.meta.changes) migrated++;
+          else await env.PHOTOS.delete(key);
+        }
+        return json({migrated},200,headers);
       }
       if (path === '/api/admin/photos/bulk' && request.method === 'POST') {
         const input = await request.json();
         if (!['approve', 'delete'].includes(input.action) || !Array.isArray(input.ids) ||
-            input.ids.length < 1 || input.ids.length > MAX_PHOTOS ||
+            input.ids.length < 1 || input.ids.length > MAX_BULK ||
             input.ids.some(id => typeof id !== 'string' || !/^[a-f0-9-]{36}$/.test(id))) {
           return json({ error: 'Choose between 1 and 500 photos and a valid action.' }, 400, headers);
         }
         const ids = [...new Set(input.ids)];
+        if (input.action === 'delete') return json({action:'delete',changed:await removePhotos(env, ids)},200,headers);
         const statements = [];
         for (let i = 0; i < ids.length; i += 80) {
           const chunk = ids.slice(i, i + 80);
@@ -137,12 +203,16 @@ export default {
       if (reviewMatch && request.method === 'POST') {
         const input = await request.json();
         if (input.action === 'delete') {
-          const result = await env.DB.prepare('DELETE FROM photos WHERE id = ?').bind(reviewMatch[1]).run();
-          if (!result.meta.changes) return json({ error: 'Photo not found or already deleted.' }, 404, headers);
+          const changed = await removePhotos(env, [reviewMatch[1]]);
+          if (!changed) return json({ error: 'Photo not found or already deleted.' }, 404, headers);
           return json({ deleted: true }, 200, headers);
         }
         if (!['approve','reject'].includes(input.action)) return json({ error:'Invalid action' }, 400, headers);
-        const status = input.action === 'approve' ? 'approved' : 'rejected';
+        if (input.action === 'reject') {
+          const changed = await removePhotos(env, [reviewMatch[1]], true);
+          return json(changed ? {status:'rejected'} : {error:'Photo no longer pending.'}, changed ? 200 : 404, headers);
+        }
+        const status = 'approved';
         const photo = await env.DB.prepare("SELECT id FROM photos WHERE id=? AND status='pending'").bind(reviewMatch[1]).first();
         if (!photo) return json({ error:'Photo no longer pending.' }, 404, headers);
         const result = await env.DB.prepare("UPDATE photos SET status=?, reviewed_at=?, image_data=CASE WHEN ?='rejected' THEN NULL ELSE image_data END WHERE id=? AND status='pending'")

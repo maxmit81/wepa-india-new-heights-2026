@@ -61,15 +61,22 @@ function showStatus(target, message, type = '') {
   target.className = `form-status ${type}`;
 }
 
-async function loadGallery() {
+let nextGalleryOffset = 0;
+const morePhotos = document.createElement('button');
+morePhotos.type = 'button'; morePhotos.className = 'btn btn-primary'; morePhotos.textContent = 'Load more photos'; morePhotos.hidden = true;
+gallery?.after(morePhotos);
+morePhotos.addEventListener('click', () => loadGallery(true));
+async function loadGallery(append = false) {
   if (!gallery) return;
   try {
     if (!apiBase) throw new Error('API not configured');
-    const response = await fetch(apiUrl('/api/photos'), { cache: 'no-store' });
+    morePhotos.disabled = true;
+    const response = await fetch(apiUrl('/api/photos?offset=' + (append ? nextGalleryOffset : 0)), { cache: 'no-store' });
     if (!response.ok) throw new Error('Gallery unavailable');
-    const { photos } = await response.json();
-    gallery.replaceChildren();
-    if (!photos.length) {
+    const { photos, nextOffset } = await response.json();
+    nextGalleryOffset = nextOffset; morePhotos.hidden = nextOffset == null;
+    if (!append) gallery.replaceChildren();
+    if (!photos.length && !append) {
       const empty = document.createElement('p');
       empty.className = 'gallery-empty';
       empty.textContent = 'No photos yet. Be the first to share one during the off-site.';
@@ -94,8 +101,9 @@ async function loadGallery() {
       gallery.append(figure);
     }
   } catch {
+    if (append) { morePhotos.textContent = 'Could not load more. Tap to retry'; return; }
     gallery.textContent = apiBase ? 'The gallery is temporarily unavailable. Please try again later.' : 'The photo wall will open before the off-site.';
-  }
+  } finally { morePhotos.disabled = false; }
 }
 
 photoForm?.addEventListener('submit', async (event) => {

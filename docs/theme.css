@@ -63,14 +63,14 @@ html[data-theme=dark] .hero-sky{background:radial-gradient(ellipse at 0% 0%,#ff9
 
 
 /* Confirmed speaker lineup with matching square portraits. */
-.speaker-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:20px;align-items:stretch}
+.speaker-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;align-items:stretch}
 .speaker-card{display:flex;flex-direction:column;min-width:0}
 .speaker-card .speaker-portrait{height:auto;min-height:0;aspect-ratio:1;overflow:hidden;flex:none}
 .speaker-card .speaker-portrait:before,.speaker-card .speaker-portrait:after{display:none}
 .speaker-portrait img{display:block;width:100%;height:100%;object-fit:cover}
 .speaker-card .speaker-copy{padding:22px 18px}.speaker-card .speaker-copy h3{font-size:22px;line-height:1.2;margin:0 0 12px;letter-spacing:-.025em}
 .speaker-card .speaker-copy .speaker-role{font-size:14px;line-height:1.55;margin:0;color:var(--muted)}
-@media(max-width:1100px){.speaker-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1100px){.speaker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.speaker-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.speaker-card .speaker-copy{padding:18px 14px}.speaker-card .speaker-copy h3{font-size:20px}.speaker-card .speaker-copy .speaker-role{font-size:13px}}
 @media(max-width:360px){.speaker-grid{grid-template-columns:1fr}.speaker-card{display:flex}.speaker-card .speaker-portrait{height:auto;min-height:0}}
 

@@ -1,5 +1,6 @@
 """Set API origin and make QR codes for this repository's Pages URL."""
 import json
+import hashlib
 import os
 from pathlib import Path
 import qrcode
@@ -13,6 +14,9 @@ pages_url = f"https://{owner.lower()}.github.io/"
 if repo.lower() != f"{owner.lower()}.github.io":
     pages_url += repo + "/"
 (root / "docs" / "config.js").write_text("window.WEPA_API_BASE = " + json.dumps(api_url) + ";\n")
+config_version = hashlib.sha256(api_url.encode()).hexdigest()[:12]
+for page in (root / "docs").glob("*.html"):
+    page.write_text(page.read_text().replace('src="config.js"', f'src="config.js?v={config_version}"'))
 images = root / "docs" / "assets" / "images"
 for name, url in {
     "event-qr.png": pages_url,

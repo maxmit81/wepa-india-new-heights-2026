@@ -4,3 +4,15 @@ html[data-theme=light]{color-scheme:light}html[data-theme=dark]{color-scheme:dar
 @media(max-width:1050px) and (min-width:701px){.site-header{flex-wrap:wrap}.brand{flex:1}.theme-toggle{order:1}.nav-links{order:2;width:100%;justify-content:space-between;margin:0}.nav-links a{padding:7px 0}html{scroll-padding-top:140px}}
 @media(max-width:700px){.theme-toggle{position:absolute;top:9px;right:20px;min-height:40px;padding:7px 10px;font-size:12px}.brand{padding-right:110px}.nav-links{margin:0 -20px;gap:23px}.brand-copy strong{font-size:11px}.brand-copy small{font-size:8px}}
 @media(max-width:360px){.theme-toggle{right:12px;padding:7px 9px}.brand-copy{display:none!important}}
+
+/* Shared card feedback; override the legacy reveal transform reset. */
+html[data-theme=light]{--card-hover-border:#91aa74;--card-hover-shadow:0 20px 45px #173f581c}
+html[data-theme=dark]{--card-hover-border:#b2d978;--card-hover-shadow:0 20px 45px #0006,0 0 0 1px #b2d97833}
+.speaker-card,.facility-card{transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+@media(hover:hover) and (pointer:fine){
+  .speaker-card:hover,.facility-card:hover{transform:translateY(-4px)!important;border-color:var(--card-hover-border);box-shadow:var(--card-hover-shadow)}
+}
+@media(prefers-reduced-motion:reduce){
+  .speaker-card,.facility-card{transition:none!important}
+  .speaker-card:hover,.facility-card:hover{transform:none!important}
+}

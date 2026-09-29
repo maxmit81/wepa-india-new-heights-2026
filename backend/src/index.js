@@ -99,6 +99,8 @@ export default {
       }
       if (path === '/api/photos' && request.method === 'POST') {
         const form = await request.formData();
+        const name = typeof form.get('name') === 'string' ? form.get('name').trim().slice(0,60) : '';
+        if (!name) return json({ error: 'Please enter your name.' }, 400, headers);
         const file = form.get('photo');
         if (!(file instanceof File) || !PHOTO_TYPES[file.type] || file.size < 100 || file.size > MAX_BYTES) {
           return json({ error: 'The photo could not be compressed enough. Please try a smaller image.' }, 400, headers);
@@ -106,7 +108,7 @@ export default {
         const signature = new Uint8Array(await file.slice(0,16).arrayBuffer());
         if (!validImage(file.type, signature)) return json({ error: 'That file does not appear to be a valid photo.' }, 400, headers);
         const id = crypto.randomUUID();
-        const name = String(form.get('name') || '').trim().slice(0,60);
+
         const caption = String(form.get('caption') || '').trim().slice(0,140);
         const key = objectKey(id);
         // One SQL statement reserves space atomically, including concurrent uploads.

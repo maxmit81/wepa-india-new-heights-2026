@@ -106,33 +106,63 @@ async function loadGallery(append = false) {
   } finally { morePhotos.disabled = false; }
 }
 
+
+const photoInput = document.getElementById('photoFile');
+const nameInput = document.getElementById('photoName');
+const resultsList = document.createElement('ul');
+resultsList.className = 'upload-results';
+resultsList.setAttribute('aria-label', 'Photo upload results');
+photoStatus.after(resultsList);
+let uploading = false;
+photoInput.addEventListener('change', () => {
+  const count = photoInput.files.length;
+  photoInput.setCustomValidity(count > 15 ? 'Please select no more than 15 photos at a time.' : '');
+  showStatus(photoStatus, count > 15 ? 'Too many photos. Please choose up to 15 at a time.' : count ? count + ' photo' + (count === 1 ? '' : 's') + ' selected. Ready to upload.' : 'Choose up to 15 photos.', count > 15 ? 'error' : '');
+  resultsList.replaceChildren();
+});
+nameInput.addEventListener('input', () => nameInput.setCustomValidity(''));
 photoForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const file = document.getElementById('photoFile').files[0];
-  if (!file) return;
-  if (file.size > 20 * 1024 * 1024) {
-    showStatus(photoStatus, 'Please choose a photo smaller than 20 MB.', 'error');
-    return;
+  if (uploading) return;
+  const files = Array.from(photoInput.files);
+  const name = nameInput.value.trim();
+  if (!name) { nameInput.setCustomValidity('Please enter your name.'); nameInput.reportValidity(); return; }
+  if (!files.length || files.length > 15) {
+    showStatus(photoStatus, 'Please select between 1 and 15 photos.', 'error'); return;
   }
-  const button = photoForm.querySelector('button[type=submit]');
-  button.disabled = true;
-  showStatus(photoStatus, 'Preparing your photo…');
-  try {
-    if (!apiBase) throw new Error('Photo uploads are not ready yet.');
-    const upload = await preparePhoto(file);
-    const payload = new FormData(photoForm);
-    payload.set('photo', upload);
-    showStatus(photoStatus, 'Uploading your photo…');
-    const response = await fetch(apiUrl('/api/photos'), { method: 'POST', body: payload });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || 'Upload failed. Please try again.');
-    photoForm.reset();
-    showStatus(photoStatus, 'Thank you! Your photo has been received and will appear after review.', 'success');
-  } catch (error) {
-    showStatus(photoStatus, error.message || 'Upload failed. Please try again.', 'error');
-  } finally {
-    button.disabled = false;
+  uploading = true;
+  setPhotoEnabled(false);
+  resultsList.replaceChildren();
+  let completed = 0;
+  for (const [index, file] of files.entries()) {
+    const row = document.createElement('li');
+    row.textContent = file.name + ' — preparing…';
+    resultsList.append(row);
+    showStatus(photoStatus, 'Uploading ' + (index + 1) + ' of ' + files.length + '… Please keep this page open.');
+    try {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('Choose a JPEG, PNG or WebP image.');
+      if (file.size > 20 * 1024 * 1024) throw new Error('Larger than 20 MB. Choose a smaller photo.');
+      const upload = await preparePhoto(file);
+      const payload = new FormData();
+      payload.set('name', name);
+      payload.set('photo', upload);
+      row.textContent = file.name + ' — uploading…';
+      const response = await fetch(apiUrl('/api/photos'), { method: 'POST', body: payload });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Upload failed. Please select this photo again to retry.');
+      completed++;
+      row.textContent = file.name + ' — received, awaiting review';
+      row.className = 'upload-success';
+    } catch (error) {
+      row.textContent = file.name + ' — ' + (error.message || 'Upload failed. Please try again.');
+      row.className = 'upload-error';
+    }
   }
+  photoInput.value = '';
+  const failed = files.length - completed;
+  showStatus(photoStatus, completed + ' of ' + files.length + ' photos received and awaiting review.' + (failed ? ' ' + failed + ' failed. Select only the failed photos to try again.' : ' Thank you!'), failed ? 'error' : 'success');
+  uploading = false;
+  setPhotoEnabled(true);
 });
-
+window.addEventListener('beforeunload', (event) => { if (uploading) { event.preventDefault(); event.returnValue = ''; } });
 checkPhotoService().then(ready => { if (ready) loadGallery(); });

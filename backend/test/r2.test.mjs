@@ -10,7 +10,7 @@ function setup(){
  const env={ADMIN_TOKEN:'test-key',ALLOWED_ORIGIN:'https://example.test',MIGRATION_ENABLED:'true',DB:{prepare:q=>new Statement(q),batch:async list=>{sql.exec('BEGIN');try{const results=[];for(const s of list)results.push(await (/^SELECT/i.test(s.q)?s.all():s.run()));sql.exec('COMMIT');return results}catch(e){sql.exec('ROLLBACK');throw e}}},PHOTOS:{head:async k=>objects.has(k)?{}:null,put:async(k,v)=>{if(failPut)throw Error('injected put failure');objects.set(k,new Uint8Array(await new Response(v).arrayBuffer()));return{}},get:async k=>objects.has(k)?{body:new Blob([objects.get(k)]).stream(),arrayBuffer:async()=>objects.get(k).slice().buffer}:null,delete:async keys=>{if(failDelete)throw Error('injected delete failure');for(const k of Array.isArray(keys)?keys:[keys])objects.delete(k)}}};
  const bytes=new Uint8Array(120);bytes.set([255,216,255]);
  const call=(path,body,auth=true)=>worker.fetch(new Request('https://worker.test'+path,{method:body?'POST':'GET',headers:{Origin:env.ALLOWED_ORIGIN,...(auth?{Authorization:'Bearer test-key'}:{}),...(body && !(body instanceof FormData)?{'Content-Type':'application/json'}:{})},body:body instanceof FormData?body:body?JSON.stringify(body):undefined}),env);
- const upload=()=>{const f=new FormData();f.set('photo',new File([bytes],'test.jpg',{type:'image/jpeg'}));return call('/api/photos',f,false)};
+ const upload=(name='Test Person')=>{const f=new FormData();if(name!==null)f.set('name',name);f.set('photo',new File([bytes],'test.jpg',{type:'image/jpeg'}));return call('/api/photos',f,false)};
  const seed=(id,status='pending',size=120,blob=null)=>sql.prepare('INSERT INTO photos(id,original_name,mime_type,bytes,status,image_data) VALUES(?,?,?,?,?,?)').run(id,'seed.jpg','image/jpeg',size,status,blob);
  return {sql,objects,env,call,upload,seed,bytes,failPut:v=>failPut=v,failDelete:v=>failDelete=v};
 }
@@ -40,3 +40,5 @@ test('failed writes release space; failed deletion hides images and is retried',
 test('public gallery pagination exposes older approved photos',async()=>{
  const t=setup();for(let i=0;i<61;i++)t.seed(crypto.randomUUID(),'approved');const p=await (await t.call('/api/photos')).json();assert.equal(p.photos.length,60);assert.equal(p.nextOffset,60);const q=await (await t.call('/api/photos?offset=60')).json();assert.equal(q.photos.length,1);assert.equal(q.nextOffset,null);
 });
+
+test('name is required before storing photos; trimmed name is retained',async()=>{const t=setup();for(const n of [null,'','   ']){const r=await t.upload(n);assert.equal(r.status,400);assert.match((await r.json()).error,/name/)}assert.equal(t.objects.size,0);assert.equal(t.sql.prepare('SELECT COUNT(*) AS n FROM photos').get().n,0);assert.equal((await t.upload('  Asha  ')).status,201);assert.equal(t.sql.prepare('SELECT uploader_name FROM photos').get().uploader_name,'Asha');});

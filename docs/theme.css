@@ -100,3 +100,9 @@ html[data-theme=dark] .recognition-section .trophy-frame img{filter:drop-shadow(
 
 @keyframes trophy-spin{0%{transform:rotateY(0deg)}100%{transform:rotateY(360deg)}}
 @media(prefers-reduced-motion:reduce){.recognition-section .trophy-frame:hover img{animation:none!important}}
+
+/* Keep hover on the compositor; do not tween costly blurred shadows. */
+.facility-card{transition:transform .14s ease-out;transition-delay:0s}
+.facility-card img{display:block;flex-shrink:0}
+@media(hover:hover) and (pointer:fine){.facility-card{will-change:transform}}
+@media(prefers-reduced-motion:reduce){.facility-card{will-change:auto;transition:none!important}}

@@ -21,12 +21,6 @@ document.getElementById('shareButton')?.addEventListener('click', async () => {
   catch(e){}
 });
 
-document.getElementById('calendarButton')?.addEventListener('click', () => {
-  const ics = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//WEPA India//New Heights 2026//EN\r\nBEGIN:VEVENT\r\nUID:wepa-new-heights-2026@wepa-india\r\nDTSTAMP:20260928T062334Z\r\nDTSTART;VALUE=DATE:20261207\r\nDTEND;VALUE=DATE:20261211\r\nSUMMARY:WEPA India — New Heights | DEC Off-site 2026\r\nLOCATION:Athiva Resort & Spa, Khandala, Maharashtra\r\nDESCRIPTION:WEPA India DEC Off-site 2026. Group bus from the WEPA.digital India office to Khandala and back.\r\nEND:VEVENT\r\nEND:VCALENDAR`;
-  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'}); const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='WEPA-New-Heights-Offsite-2026.ics'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
-});
-
 const sections = [...document.querySelectorAll('main section[id]')];
 const navLinks = [...document.querySelectorAll('.nav-links a')];
 const sectionObserver = new IntersectionObserver(entries => {

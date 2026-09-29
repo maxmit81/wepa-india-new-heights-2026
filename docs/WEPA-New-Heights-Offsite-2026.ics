@@ -1,0 +1,14 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//WEPA India//New Heights 2026//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:wepa-new-heights-2026@wepa-india
+DTSTAMP:20260929T000000Z
+DTSTART;VALUE=DATE:20261207
+DTEND;VALUE=DATE:20261211
+SUMMARY:WEPA India - New Heights | DEC Off-site 2026
+LOCATION:Athiva Resort & Spa\, Khandala\, Maharashtra
+DESCRIPTION:WEPA India DEC Off-site 2026. Group bus from the WEPA.digital India office to Khandala and back.
+END:VEVENT
+END:VCALENDAR

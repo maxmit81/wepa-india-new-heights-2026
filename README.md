@@ -1,6 +1,6 @@
 # WEPA India · New Heights · DEC Off-site 2026
 
-The public site is in `docs/` and publishes on GitHub Pages. The submission API is in `backend/` and uses a Cloudflare Worker with a D1 database for photos and feedback. All photos start as `pending`; only approved photos appear in the public gallery. Feedback is visible only in the protected review desk. GitHub Pages alone cannot accept or store uploads.
+The public site is in `docs/` and publishes on GitHub Pages. The submission API is in `backend/` and uses a Cloudflare Worker with a D1 database for photos and feedback. All photos start as `pending`; only approved photos appear in the public gallery. Feedback is visible only in the protected review desk. GitHub Pages alone cannot accept or store uploads. Until the backend is configured, the event page and QR codes work while the submission forms are visibly disabled.
 
 ## Publish the backend
 
@@ -11,7 +11,7 @@ The public site is in `docs/` and publishes on GitHub Pages. The submission API 
 
 ## Publish the site
 
-Create a public GitHub repository (suggested name: `wepa-india-new-heights-2026`), push this source to its `main` branch, and set the repository Actions variable `WEPA_API_URL` to the HTTPS Worker URL from the backend deployment. In **Settings → Pages**, select **GitHub Actions** as the publishing source. Run **Publish off-site website**. The workflow generates both QR codes for the actual GitHub Pages URL and publishes `docs/`. A subsequent push to `main` republishes the site automatically. The workflow deliberately fails before publishing when the API URL has not been configured, so the forms never appear live without their storage service.
+Push this source to `main`. In **Settings → Pages**, select **GitHub Actions** as the publishing source. Run **Publish off-site website**. The workflow generates both QR codes for the actual GitHub Pages URL and publishes `docs/`. A subsequent push to `main` republishes the site automatically. Once the backend is deployed, set the repository Actions variable `WEPA_API_URL` to its HTTPS Worker URL and rerun the workflow to enable the forms.
 
 The footer's **Review submissions** link opens `admin.html`. Enter the review key there to approve or reject photos and read private feedback. The key stays in memory until the tab is closed.
 

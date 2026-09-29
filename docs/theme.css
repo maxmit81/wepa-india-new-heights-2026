@@ -138,3 +138,6 @@ html[data-theme=dark] .back-top{background:#c6eb83;color:#142e32;border-color:#c
 @media(max-width:700px){.site-header .nav-links{gap:20px;padding-right:20px}.site-header .share-nav{padding:7px 12px;margin:5px 0;background:transparent}.back-top{width:52px;height:52px;min-height:52px;font-size:29px;margin:26px auto}.copyright-footer{padding:20px 0;font-size:13px}}
 @media(prefers-reduced-motion:reduce){.back-top{transition:none}.back-top:hover{transform:none}}
 @media(max-width:700px){.copyright-footer{padding-bottom:calc(84px + env(safe-area-inset-bottom))}}
+/* Scroll shortcut occupies the opposite corner from sharing. */
+.site-header .nav-links{gap:20px}
+@media(max-width:700px){.site-header .nav-links{gap:22px}.back-top{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:89;margin:0;width:48px;height:48px;min-height:48px;font-size:28px;visibility:hidden;opacity:0;pointer-events:none;box-shadow:0 6px 20px #001c3433}.back-top.scroll-visible{visibility:visible;opacity:1;pointer-events:auto}html:has(.share-panel[open]) .back-top,.back-top.keyboard-hidden{visibility:hidden;opacity:0;pointer-events:none}}

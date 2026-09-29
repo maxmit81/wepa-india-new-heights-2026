@@ -128,3 +128,12 @@ html[data-theme=dark] .share-panel{color:#eff5f4;background:#122c3b;border-color
 html[data-theme=dark] .agenda-switcher{background:#122c35;border-color:#48626b}html[data-theme=dark] .agenda-switcher .day-jump a{color:#dbe7e8;background:#193741;border-color:#47616b}html[data-theme=dark] .agenda-switcher .day-jump a[aria-selected=true]{background:#c6eb83;color:#112b30;border-color:#c6eb83}html[data-theme=dark] .agenda-pager button{background:#193741;color:#eff5ef;border-color:#47616b}html[data-theme=dark] .agenda-pager span{color:#cfdddd}
 }
 @media(max-width:700px){html[data-theme=dark] .agenda-section{background:#101f28;color:#eff5ef}html[data-theme=dark] .agenda-section .section-heading p{color:#bed0d4}html[data-theme=dark] .agenda-section .kicker{color:#c6eb83}html[data-theme=dark] .day-card{background:#152d38;border-color:#3c5661}html[data-theme=dark] .day-card-head{background:#1c3942;border-color:#3c5661}html[data-theme=dark] .day-card h3,html[data-theme=dark] .schedule-row strong{color:#eff5ef}html[data-theme=dark] .day-card-head p,html[data-theme=dark] .schedule-row small{color:#c1d0d6}html[data-theme=dark] .day-number,html[data-theme=dark] .schedule-row time{color:#c6eb83}html[data-theme=dark] .schedule-row{border-color:#36505b}}
+/* Keep Share & QR in the normal menu flow, after Photos. */
+.site-header .share-nav{position:static;inset:auto;box-shadow:none!important;flex-shrink:0;margin:0}
+.nav-links{align-items:center;gap:16px}
+.back-top{display:flex;align-items:center;justify-content:center;width:64px;height:64px;min-height:64px;padding:0;margin:32px auto;border-radius:50%;background:#173f52;color:#fff;border:1px solid #173f52;box-shadow:0 8px 22px #173f5226;text-decoration:none;font-size:34px;line-height:1;transition:transform .15s ease}
+.back-top:hover{background:#28566b;color:#fff;transform:translateY(-3px)}.back-top:focus-visible{outline:3px solid #88ad55;outline-offset:4px}
+html[data-theme=dark] .back-top{background:#c6eb83;color:#142e32;border-color:#c6eb83}html[data-theme=dark] .back-top:hover{background:#def5af}
+.copyright-footer{padding:24px 0;text-align:center;font-size:14px;line-height:1.5}
+@media(max-width:700px){.site-header .nav-links{gap:20px;padding-right:20px}.site-header .share-nav{padding:7px 12px;margin:5px 0;background:transparent}.back-top{width:52px;height:52px;min-height:52px;font-size:29px;margin:26px auto}.copyright-footer{padding:20px 0;font-size:13px}}
+@media(prefers-reduced-motion:reduce){.back-top{transition:none}.back-top:hover{transform:none}}

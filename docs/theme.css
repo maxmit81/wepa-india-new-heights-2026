@@ -95,5 +95,8 @@ html[data-theme=dark] .contribution-card input{background:#0d202b;color:#f1f7f9;
 .recognition-section .trophy-frame{background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;transform:none!important;perspective:800px}
 .recognition-section .trophy-frame img{display:block;object-fit:contain;filter:drop-shadow(0 12px 10px #102a3530);transition:transform .3s ease,filter .3s ease;transform-origin:50% 85%}
 html[data-theme=dark] .recognition-section .trophy-frame img{filter:drop-shadow(0 14px 10px #0006) drop-shadow(0 0 12px #ffd7781c)}
-@media(hover:hover) and (pointer:fine){.recognition-section .trophy-frame:hover img{transform:translateY(-5px) rotateY(-5deg) rotateZ(1deg);filter:drop-shadow(0 20px 14px #102a3545)}html[data-theme=dark] .recognition-section .trophy-frame:hover img{filter:drop-shadow(0 20px 14px #0007) drop-shadow(0 0 18px #ffd77830)}}
+@media(hover:hover) and (pointer:fine){.recognition-section .trophy-frame:hover img{transform:none;animation:trophy-spin 1.8s cubic-bezier(.22,.7,.2,1) 1 both;filter:drop-shadow(0 20px 14px #102a3545)}html[data-theme=dark] .recognition-section .trophy-frame:hover img{filter:drop-shadow(0 20px 14px #0007) drop-shadow(0 0 18px #ffd77830)}}
 @media(prefers-reduced-motion:reduce){.recognition-section .trophy-frame img{transition:none}.recognition-section .trophy-frame:hover img{transform:none}}
+
+@keyframes trophy-spin{0%{transform:rotateY(0deg)}100%{transform:rotateY(360deg)}}
+@media(prefers-reduced-motion:reduce){.recognition-section .trophy-frame:hover img{animation:none!important}}

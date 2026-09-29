@@ -30,3 +30,7 @@ html[data-theme=dark]{--card-hover-border:#b2d978;--card-hover-shadow:0 20px 45p
 }
 
 @media(min-width:1001px){.venue-section{padding:32px 0;scroll-margin-top:0}.venue-section .section-heading{margin-bottom:18px}.venue-image{height:260px}.map-wrap{height:160px;margin-top:16px}}
+/* Give gradient text a full paint area, including the g descender. */
+.hero .event-mark h1{line-height:1.08;overflow:visible}
+.hero .event-mark h1 span{line-height:1.18;padding:0 .06em .12em .02em;margin-left:-.02em;margin-bottom:-.12em;max-width:100%;overflow:visible}
+.hero-copy{min-width:0}

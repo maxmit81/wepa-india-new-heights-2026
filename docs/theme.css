@@ -145,3 +145,9 @@ html[data-theme=dark] .back-top{background:#c6eb83;color:#142e32;border-color:#c
 /* Approved event highlights; four columns, or two by two on mobile. */
 .quick-grid{align-items:stretch}.quick-item{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;gap:8px;min-width:0}.quick-item .quick-label{font-size:11px;line-height:1.4;letter-spacing:.08em;text-transform:uppercase;font-weight:750;min-height:16px}.quick-item strong{font-size:40px;line-height:1.1;white-space:nowrap}.quick-item span{font-size:15px;line-height:1.4;margin:0}
 @media(max-width:700px){.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 0}.quick-item,.quick-item:first-child{padding:0 10px}.quick-item .quick-label{font-size:10px;letter-spacing:.035em;min-height:28px;display:flex;align-items:center;justify-content:center}.quick-item strong{font-size:32px}.quick-item span{font-size:13px}.quick-item:nth-child(2){border-right:0}}
+/* Bold highlight labels and a shared bottom-right scroll shortcut. */
+.quick-item>span{font-weight:750}
+.back-top{position:fixed;left:auto;right:24px;bottom:24px;z-index:89;margin:0;visibility:hidden;opacity:0;pointer-events:none}
+.back-top.scroll-visible{visibility:visible;opacity:1;pointer-events:auto}
+html:has(.share-panel[open]) .back-top,.back-top.keyboard-hidden{visibility:hidden;opacity:0;pointer-events:none}
+@media(max-width:700px){.back-top{left:auto;right:16px;bottom:calc(16px + env(safe-area-inset-bottom))}.share-float:not([hidden]){bottom:calc(76px + env(safe-area-inset-bottom))}}

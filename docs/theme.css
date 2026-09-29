@@ -43,3 +43,9 @@ html[data-theme=dark] .official-logo-blue{display:none}
 html[data-theme=dark] .official-logo-white{display:block}
 @media(max-width:700px){.site-header .brand-logo-shell{width:76px;min-width:76px;height:34px;padding:3px}}
 
+
+/* Show the original blue wordmark from the supplied SVG lockup. */
+.site-header .brand-logo-shell{width:114px;min-width:114px;height:44px;padding:0}
+.site-header .official-logo-blue{position:absolute;left:0;top:50%;transform:translateY(-50%);width:201.1%;max-width:none;height:auto}
+@media(max-width:700px){.site-header .brand-logo-shell{width:96px;min-width:96px;height:38px;padding:0}}
+

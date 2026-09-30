@@ -174,3 +174,9 @@ html[data-theme=dark] .gallery-folder{background:#18343f;border-color:#48636a}ht
  html[data-theme=dark] .hero .hero-card:hover{background:linear-gradient(145deg,#254a50,#172c3a 75%);border-color:#b6dd91}
 }
 @media(prefers-reduced-motion:reduce){.hero .hero-card{transition:none}html[data-theme] .hero .hero-card:hover{transform:none!important}}
+/* Light mode: double the shared hover shadow opacity (0x1c -> 0x38). */
+html[data-theme=light]{--card-hover-shadow:0 20px 45px #173f5838}
+@media(hover:hover) and (pointer:fine){
+ html[data-theme=light] :is(.hero-card,.speaker-card,.facility-card,.journey-stop,.photo-card,.day-card,.venue-info,.venue-image,.map-wrap,.upload-qr-card,.contribution-card,.gallery-folder):hover{box-shadow:var(--card-hover-shadow)}
+ html[data-theme=light] .recognition-section .trophy-frame:hover img{filter:drop-shadow(0 20px 14px #102a358a)}
+}

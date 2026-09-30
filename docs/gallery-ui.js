@@ -11,8 +11,32 @@
  dialog.addEventListener('keydown',event=>{if(event.key==='ArrowRight'){event.preventDefault();move(1)}if(event.key==='ArrowLeft'){event.preventDefault();move(-1)}if(event.key==='+'||event.key==='='){event.preventDefault();setZoom(zoom+.5)}if(event.key==='-'){event.preventDefault();setZoom(zoom-.5)}});
  dialog.addEventListener('close',()=>{image.removeAttribute('src');trigger?.focus({preventScroll:true})});
  image.addEventListener('dblclick',()=>setZoom(zoom===1?2:1));
- let drag;image.draggable=false;stage.addEventListener('pointerdown',e=>{if(zoom>1&&e.pointerType==='mouse'){drag={x:e.clientX,y:e.clientY,left:stage.scrollLeft,top:stage.scrollTop};stage.setPointerCapture(e.pointerId)}});stage.addEventListener('pointermove',e=>{if(drag){stage.scrollLeft=drag.left+drag.x-e.clientX;stage.scrollTop=drag.top+drag.y-e.clientY}});stage.addEventListener('pointerup',()=>drag=null);stage.addEventListener('pointercancel',()=>drag=null);
- let start;stage.addEventListener('touchstart',event=>{if(event.touches.length===1&&zoom===1)start={x:event.touches[0].clientX,y:event.touches[0].clientY};else start=null},{passive:true});stage.addEventListener('touchend',event=>{if(!start||zoom!==1)return;const dx=event.changedTouches[0].clientX-start.x,dy=event.changedTouches[0].clientY-start.y;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.5)move(dx<0?1:-1);start=null},{passive:true});
+ // Capture gestures inside the photo only; toolbar controls retain normal behaviour.
+ image.draggable=false;
+ const pointers=new Map();let drag=null,pinch=null,swipe=null;
+ const distance=()=>{const [a,b]=[...pointers.values()];return Math.hypot(a.x-b.x,a.y-b.y)};
+ function clearGesture(){pointers.clear();drag=pinch=swipe=null;}
+ stage.addEventListener('wheel',event=>{event.preventDefault();const delta=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?stage.clientHeight:1);setZoom(zoom*Math.exp(-Math.max(-200,Math.min(200,delta))*.002));},{passive:false});
+ stage.addEventListener('pointerdown',event=>{
+  if(event.pointerType==='mouse'&&event.button!==0)return;
+  pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});stage.setPointerCapture(event.pointerId);
+  if(pointers.size===2){pinch={distance:distance(),zoom};drag=swipe=null;}
+  else if(pointers.size===1){drag={x:event.clientX,y:event.clientY,left:stage.scrollLeft,top:stage.scrollTop};swipe=zoom===1&&event.pointerType!=='mouse'?{x:event.clientX,y:event.clientY}:null;}
+ });
+ stage.addEventListener('pointermove',event=>{
+  if(!pointers.has(event.pointerId))return;
+  pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});
+  if(pointers.size===2&&pinch){if(pinch.distance>0)setZoom(pinch.zoom*distance()/pinch.distance);}
+  else if(pointers.size===1&&drag&&zoom>1){stage.scrollLeft=drag.left+drag.x-event.clientX;stage.scrollTop=drag.top+drag.y-event.clientY;}
+ });
+ function endPointer(event){
+  if(!pointers.has(event.pointerId))return;
+  if(event.type==='pointerup'&&pointers.size===1&&swipe&&zoom===1){const dx=event.clientX-swipe.x,dy=event.clientY-swipe.y;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.5)move(dx<0?1:-1);}
+  pointers.delete(event.pointerId);pinch=swipe=drag=null;
+  if(pointers.size===1){const point=[...pointers.values()][0];drag={x:point.x,y:point.y,left:stage.scrollLeft,top:stage.scrollTop};}
+ }
+ stage.addEventListener('pointerup',endPointer);stage.addEventListener('pointercancel',endPointer);stage.addEventListener('lostpointercapture',endPointer);
+ dialog.addEventListener('close',clearGesture);
  new MutationObserver(sync).observe(grid,{childList:true});sync();
  const refresh=document.getElementById('refreshGallery');refresh.addEventListener('click',async()=>{refresh.disabled=true;await loadGallery();refresh.disabled=false});
  // Newly approved photos appear while the folder is open; never interrupt a viewer.

@@ -1,3 +1,5 @@
+import {photoArchive} from './archive.js';
+
 const MAX_BYTES = 1_500_000;
 const MAX_BULK = 500;
 const MAX_TOTAL_BYTES = 2_000_000_000;
@@ -163,6 +165,29 @@ export default {
           env.DB.prepare("SELECT COALESCE(SUM(bytes),0) AS usedBytes FROM photos WHERE status != 'rejected'").first()
         ]);
         return json({ pending: photos.results.slice(0,500), approved: approved.results.slice(0,500), nextOffset: photos.results.length > 500 || approved.results.length > 500 ? offset + 500 : null, storage: {usedBytes:usage.usedBytes, capacityBytes:MAX_TOTAL_BYTES}, feedback: feedback.results.map(row=>({ ...row, createdAt: row.created_at })) }, 200, headers);
+      }
+      if (path === '/api/admin/photos/archive' && request.method === 'GET') {
+        async function* rows() {
+          let offset = 0;
+          while (true) {
+            const result = await env.DB.prepare(
+              "SELECT id, original_name, mime_type, caption, uploader_name, status, created_at, storage_key FROM photos WHERE status IN ('pending','approved') ORDER BY created_at, id LIMIT 100 OFFSET ?"
+            ).bind(offset).all();
+            yield* result.results;
+            if (result.results.length < 100) break;
+            offset += result.results.length;
+          }
+        }
+        const stream = photoArchive(rows(), async photo => {
+          if (photo.storage_key) return (await env.PHOTOS.get(photo.storage_key))?.body;
+          const legacy = await env.DB.prepare('SELECT image_data FROM photos WHERE id=?').bind(photo.id).first();
+          return legacy?.image_data ? [new Uint8Array(legacy.image_data)] : null;
+        });
+        return new Response(stream, {headers: {
+          ...headers, 'Content-Type':'application/zip',
+          'Content-Disposition':'attachment; filename="wepa-new-heights-photos.zip"',
+          'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff'
+        }});
       }
       if (path === '/api/admin/storage/migrate' && request.method === 'POST' && env.MIGRATION_ENABLED === 'true') {
         const rows = await env.DB.prepare("SELECT id,image_data,mime_type FROM photos WHERE storage_key IS NULL AND image_data IS NOT NULL AND status IN ('pending','approved') LIMIT 5").all();

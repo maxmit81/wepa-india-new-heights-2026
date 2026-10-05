@@ -21,6 +21,57 @@ async function loadPreview(img, generation) {
 const form = document.getElementById('adminLogin');
 const message = document.getElementById('adminMessage');
 const grid = document.getElementById('adminGrid');
+const downloadButton = document.getElementById('downloadPhotos');
+const downloadStatus = document.getElementById('downloadStatus');
+
+downloadButton.addEventListener('click', async () => {
+  if (busy) return;
+  let fileHandle;
+  // Open the save dialog directly from the click, before the first await.
+  if (window.showSaveFilePicker) {
+    try {
+      fileHandle = await window.showSaveFilePicker({
+        suggestedName: 'wepa-new-heights-photos.zip',
+        types: [{description:'ZIP archive', accept:{'application/zip':['.zip']}}]
+      });
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      downloadStatus.textContent = 'Could not open the save dialog: ' + error.message;
+      return;
+    }
+  }
+  setBusy(true);
+  downloadStatus.textContent = 'Preparing the photo archive… Keep this page open until it finishes.';
+  try {
+    const response = await authorizedFetch('/api/admin/photos/archive');
+    if (!response.ok || !response.body) throw new Error(response.status === 401 ? 'Review key expired. Refresh and sign in again.' : 'Could not start the archive.');
+    if (fileHandle) {
+      const output = await fileHandle.createWritable();
+      try {
+        let saved = 0;
+        const reader = response.body.getReader();
+        while (true) {
+          const {done, value} = await reader.read();
+          if (done) break;
+          await output.write(value);
+          saved += value.byteLength;
+          downloadStatus.textContent = 'Saving photos… ' + (saved / 1e6).toFixed(1) + ' MB';
+        }
+        await output.close();
+      } catch (error) { await output.abort(); throw error; }
+    } else {
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url; link.download = 'wepa-new-heights-photos.zip';
+      document.body.append(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+    downloadStatus.textContent = 'Photo archive downloaded.';
+  } catch (error) {
+    downloadStatus.textContent = 'Download failed: ' + error.message + ' Please try again.';
+  } finally { setBusy(false); }
+});
 
 async function authorizedFetch(path, options = {}) {
   return fetch(api(path), { ...options, headers: { ...(options.headers || {}), Authorization: `Bearer ${reviewKey}` }, cache: 'no-store' });

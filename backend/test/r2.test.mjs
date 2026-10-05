@@ -42,3 +42,21 @@ test('public gallery pagination exposes older approved photos',async()=>{
 });
 
 test('name is required before storing photos; trimmed name is retained',async()=>{const t=setup();for(const n of [null,'','   ']){const r=await t.upload(n);assert.equal(r.status,400);assert.match((await r.json()).error,/name/)}assert.equal(t.objects.size,0);assert.equal(t.sql.prepare('SELECT COUNT(*) AS n FROM photos').get().n,0);assert.equal((await t.upload('  Asha  ')).status,201);assert.equal(t.sql.prepare('SELECT uploader_name FROM photos').get().uploader_name,'Asha');});
+test('admin archive requires review key and contains pending, published and manifest',async()=>{
+ const t=setup();const pending=(await (await t.upload('Asha')).json()).id;
+ const approved=(await (await t.upload('Mitesh')).json()).id;
+ await t.call('/api/admin/photos/'+approved,{action:'approve'});
+ assert.equal((await t.call('/api/admin/photos/archive',null,false)).status,401);
+ const response=await t.call('/api/admin/photos/archive');
+ assert.equal(response.status,200);
+ assert.match(response.headers.get('content-disposition'),/attachment/);
+ const zip=new Uint8Array(await response.arrayBuffer());
+ const text=new TextDecoder().decode(zip);
+ assert.equal(new DataView(zip.buffer).getUint32(0,true),0x04034b50);
+ assert(text.includes('pending/'+pending+'.jpg'));
+ assert(text.includes('approved/'+approved+'.jpg'));
+ assert(text.includes('photos.csv'));
+ assert(text.includes('Asha'));
+ assert(text.includes('Mitesh'));
+ assert.equal(new DataView(zip.buffer).getUint32(zip.length-22,true),0x06054b50);
+});

@@ -1,7 +1,9 @@
-.hero-invitation{max-width:590px;color:#d3dee0;font-size:16px;line-height:1.6;margin:18px 0 22px}
+.hero-invitation{max-width:590px;color:#425c66;font-size:16px;line-height:1.6;margin:18px 0 22px}
 .hero-invitation p{margin:0 0 11px}
-.hero-invitation p:first-child{color:#fff;font-weight:650;font-size:18px}
+.hero-invitation p:first-child{color:#173b50;font-weight:650;font-size:18px}
 .hero-invitation p:last-child{margin-bottom:0}
+html[data-theme=dark] .hero-invitation{color:#d3dee0}
+html[data-theme=dark] .hero-invitation p:first-child{color:#fff}
 .recognition-times{align-items:start}
 .recognition-times .appreciation-invite{font-size:13px;line-height:1.55;font-weight:400;color:#51656d;margin:12px 0 0}
 html[data-theme=dark] .recognition-times .appreciation-invite{color:#dce8e9}

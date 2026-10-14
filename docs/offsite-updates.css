@@ -4,10 +4,11 @@
 .hero-invitation p:last-child{margin-bottom:0}
 html[data-theme=dark] .hero-invitation{color:#d3dee0}
 html[data-theme=dark] .hero-invitation p:first-child{color:#fff}
-.recognition-times{align-items:start}
-.recognition-times .appreciation-invite{font-size:13px;line-height:1.55;font-weight:400;color:#51656d;margin:12px 0 0}
-html[data-theme=dark] .recognition-times .appreciation-invite{color:#dce8e9}
+.recognition-times{align-items:stretch;grid-auto-rows:1fr}
+.recognition-times>div{height:100%}
+.recognition-times .recognition-description,.recognition-times .appreciation-invite{font-size:13px;line-height:1.55;font-weight:400;color:#51656d;margin:12px 0 0}
+html[data-theme=dark] .recognition-times .recognition-description,html[data-theme=dark] .recognition-times .appreciation-invite{color:#dce8e9}
 .speaker-portrait img{object-position:center 38%}
 .speaker-card:nth-child(1) .speaker-portrait,.speaker-card:nth-child(5) .speaker-portrait,.speaker-card:nth-child(6) .speaker-portrait{background:radial-gradient(ellipse at 82% 24%,#3b91a7 0%,transparent 50%),linear-gradient(135deg,#092b49 0%,#15536e 66%,#237985 100%)}
 @media(min-width:1001px){.speaker-grid>.speaker-card:nth-child(5){grid-column:2}.speaker-grid>.speaker-card:nth-child(6){grid-column:3}}
-@media(max-width:700px){.hero-invitation{font-size:14px;line-height:1.5}.hero-invitation p:first-child{font-size:16px}.recognition-times{grid-template-columns:1fr}.recognition-times .appreciation-invite{font-size:13px}}
+@media(max-width:700px){.hero-invitation{font-size:14px;line-height:1.5}.hero-invitation p:first-child{font-size:16px}.recognition-times{grid-template-columns:1fr}.recognition-times .recognition-description,.recognition-times .appreciation-invite{font-size:13px}}

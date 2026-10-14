@@ -8,4 +8,5 @@ html[data-theme=dark] .hero-invitation p:first-child{color:#fff}
 .recognition-times .appreciation-invite{font-size:13px;line-height:1.55;font-weight:400;color:#51656d;margin:12px 0 0}
 html[data-theme=dark] .recognition-times .appreciation-invite{color:#dce8e9}
 .speaker-portrait img{object-position:center 38%}
+@media(min-width:1001px){.speaker-grid>.speaker-card:nth-child(5){grid-column:2}.speaker-grid>.speaker-card:nth-child(6){grid-column:3}}
 @media(max-width:700px){.hero-invitation{font-size:14px;line-height:1.5}.hero-invitation p:first-child{font-size:16px}.recognition-times{grid-template-columns:1fr}.recognition-times .appreciation-invite{font-size:13px}}

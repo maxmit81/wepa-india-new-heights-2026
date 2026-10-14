@@ -1,0 +1,7 @@
+.hero-invitation{max-width:590px;color:#d3dee0;font-size:16px;line-height:1.6;margin:18px 0 22px}
+.hero-invitation p{margin:0 0 11px}
+.hero-invitation p:first-child{color:#fff;font-weight:650;font-size:18px}
+.hero-invitation p:last-child{margin-bottom:0}
+.recognition-times .appreciation-invite{font-size:13px;line-height:1.55;font-weight:400;color:#e1ebed;margin:12px 0 0}
+.speaker-portrait img{object-position:center 38%}
+@media(max-width:700px){.hero-invitation{font-size:14px;line-height:1.5}.hero-invitation p:first-child{font-size:16px}.recognition-times{grid-template-columns:1fr}.recognition-times .appreciation-invite{font-size:13px}}

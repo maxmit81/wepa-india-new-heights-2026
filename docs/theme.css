@@ -199,3 +199,5 @@ html[data-theme=light]{--card-hover-shadow:0 20px 45px #173f5838}
 .hero .weather-source a{color:#cdeba7;text-underline-offset:3px}
 .hero .weather-row+.countdown-caption{margin-top:22px}
 @media(max-width:380px){.hero .weather-grid{grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,1fr))}.hero .weather-icon{width:26px;font-size:24px}.hero .weather-now{gap:6px}.hero .weather-now strong{font-size:27px}.hero .weather-range{padding-left:7px}.hero .weather-range strong{font-size:20px}.hero .weather-range small{font-size:8px;letter-spacing:0}.hero .weather-source{font-size:9px}}
+
+.hero .weather-row.unavailable .weather-live i{background:#a9bdc1;box-shadow:none}

@@ -45,6 +45,8 @@ async function updateWeather(){
       if(!Number.isFinite(value)) throw new Error('Invalid weather');
       document.getElementById(id).textContent=Math.round(value)+'°';
     }
+    document.getElementById('weatherRow').classList.remove('unavailable');
+    document.querySelector('.weather-live').lastChild.textContent=' LIVE WEATHER';
     const icon=Number(data.icon);
     document.getElementById('weatherIcon').textContent=(icon>=12&&icon<=29)?'☂':(icon>=7&&icon<=11||icon>=30)?'☁':data.daytime?'☀':'☾';
     description.textContent=String(data.description||'Current conditions');
@@ -52,6 +54,7 @@ async function updateWeather(){
     document.getElementById('weatherUpdated').textContent=Number.isNaN(observed.getTime())?'Today’s conditions':'Updated '+new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'numeric',minute:'2-digit'}).format(observed)+' IST';
     if(data.link){const link=new URL(data.link);if(link.protocol==='https:'&&(link.hostname==='accuweather.com'||link.hostname.endsWith('.accuweather.com'))) document.getElementById('weatherCredit').href=link.href;}
   }catch(error){
+    document.getElementById('weatherRow').classList.add('unavailable');
     description.textContent='Weather update unavailable';
     document.getElementById('weatherUpdated').textContent='Check the latest conditions';
     document.querySelector('.weather-live').textContent='CURRENT WEATHER';

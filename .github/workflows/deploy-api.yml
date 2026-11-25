@@ -1,6 +1,11 @@
 name: Deploy photo service
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-api.yml'
 permissions:
   contents: read
 jobs:
@@ -32,8 +37,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           ADMIN_TOKEN: ${{ secrets.WEPA_ADMIN_TOKEN }}
+          ACCUWEATHER_API_KEY: ${{ secrets.ACCUWEATHER_API_KEY }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" && test -n "$ADMIN_TOKEN" || { echo 'Cloudflare credentials or WEPA_ADMIN_TOKEN missing'; exit 1; }
           npx wrangler d1 migrations apply wepa-new-heights-db --remote --config wrangler.deploy.json
           printf '%s' "$ADMIN_TOKEN" | npx wrangler secret put ADMIN_TOKEN --config wrangler.deploy.json
+          if [ -n "$ACCUWEATHER_API_KEY" ]; then
+            printf '%s' "$ACCUWEATHER_API_KEY" | npx wrangler secret put ACCUWEATHER_API_KEY --config wrangler.deploy.json
+          fi
           npx wrangler deploy --config wrangler.deploy.json

@@ -72,6 +72,53 @@ async function cleanupIncomplete(env) {
   if (rows.results.length) await removePhotos(env, rows.results.map(row => row.id));
 }
 
+// AccuWeather credentials remain in the Worker secret store. Cache upstream calls
+// across visitors to keep the forecast fresh without spending a request per page load.
+async function accuWeather(path, key) {
+  const response = await fetch('https://dataservice.accuweather.com' + path, {
+    headers: { Authorization: 'Bearer ' + key, Accept: 'application/json' }
+  });
+  if (!response.ok) throw new Error('AccuWeather returned ' + response.status);
+  return response.json();
+}
+async function locationKey(env) {
+  if (env.ACCUWEATHER_LOCATION_KEY) return env.ACCUWEATHER_LOCATION_KEY;
+  const cache = caches.default;
+  const cacheRequest = new Request('https://wepa-weather-cache.internal/location');
+  const saved = await cache.match(cacheRequest);
+  if (saved) return saved.text();
+  const place = await accuWeather('/locations/v1/cities/geoposition/search?q=18.7616%2C73.3696', env.ACCUWEATHER_API_KEY);
+  if (!place?.Key) throw new Error('AccuWeather location unavailable');
+  await cache.put(cacheRequest, new Response(place.Key, { headers: { 'Cache-Control': 'public, max-age=2592000' } }));
+  return place.Key;
+}
+async function weather(env) {
+  const cache = caches.default;
+  const cacheRequest = new Request('https://wepa-weather-cache.internal/today');
+  const saved = await cache.match(cacheRequest);
+  if (saved) return saved.json();
+  if (!env.ACCUWEATHER_API_KEY) return null;
+  const key = await locationKey(env);
+  const [conditions, forecast] = await Promise.all([
+    accuWeather('/currentconditions/v1/' + encodeURIComponent(key), env.ACCUWEATHER_API_KEY),
+    accuWeather('/forecasts/v1/daily/1day/' + encodeURIComponent(key) + '?metric=true', env.ACCUWEATHER_API_KEY)
+  ]);
+  const current = conditions?.[0], day = forecast?.DailyForecasts?.[0];
+  const result = {
+    current: current?.Temperature?.Metric?.Value,
+    high: day?.Temperature?.Maximum?.Value,
+    low: day?.Temperature?.Minimum?.Value,
+    description: current?.WeatherText,
+    icon: current?.WeatherIcon,
+    daytime: current?.IsDayTime,
+    observedAt: current?.LocalObservationDateTime,
+    link: current?.Link || day?.Link
+  };
+  if (![result.current, result.high, result.low].every(Number.isFinite)) throw new Error('AccuWeather returned incomplete temperatures');
+  await cache.put(cacheRequest, Response.json(result, { headers: { 'Cache-Control': 'public, max-age=1800' } }));
+  return result;
+}
+
 export default {
   async scheduled(event, env) { await cleanupIncomplete(env); },
   async fetch(request, env) {
@@ -89,6 +136,10 @@ export default {
       return json({ error: 'Open this form from the event website.' }, 403, headers);
     }
     try {
+      if (path === '/api/weather' && request.method === 'GET') {
+        const conditions = await weather(env);
+        return conditions ? json(conditions, 200, headers) : json({ error: 'Weather service is awaiting its AccuWeather key.' }, 503, headers);
+      }
       if (path === '/api/health' && request.method === 'GET') {
         await env.DB.prepare('SELECT storage_key FROM photos LIMIT 1').first();
         await env.PHOTOS.head('health-check');
